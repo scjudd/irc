@@ -12,13 +12,13 @@ import (
 type Connection struct {
 	sock        net.Conn
 	nick        string
-	read, write chan string
+	read, write chan *Message
 	MessageDispatcher
 }
 
 func NewConnection() *Connection {
-	read := make(chan string)
-	write := make(chan string)
+	read := make(chan *Message)
+	write := make(chan *Message)
 	dispatcher := NewDispatcher()
 	return &Connection{nil, "", read, write, dispatcher}
 }
@@ -64,7 +64,7 @@ func (c *Connection) Connect(server, nick string) error {
 					return
 				}
 				str = str[:len(str)-2] // remove trailing "\r\n"
-				c.read <- str
+				c.read <- parseMessage(str)
 			}
 		}
 	}()
@@ -77,18 +77,18 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				str, ok := <-c.write
+				msg, ok := <-c.write
 				if !ok {
 					fatal("write: channel closed")
 					return
 				}
-				_, err := bw.WriteString(str + "\r\n")
+				_, err := bw.WriteString(msg.Raw + "\r\n")
 				if err != nil {
 					fatal(fmt.Sprintf("write: %s", err))
 					return
 				}
 				bw.Flush()
-				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", str)
+				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", msg)
 			}
 		}
 	}()
@@ -101,7 +101,7 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				msg := parseMessage(<-c.read)
+				msg := <-c.read
 				// TODO(scjudd): proper prefix parsing, so someone with nick botbot won't get ignored
 				if strings.Index(msg.Prefix, nick) == 0 {
 					continue // ignore our own messages
@@ -121,6 +121,6 @@ func (c *Connection) Connect(server, nick string) error {
 
 func (c *Connection) WriteString(s string) (int, error) {
 	// TODO(scjudd): implement proper WriteString interface
-	c.write <- s
+	c.write <- parseMessage(s)
 	return len(s), nil
 }
