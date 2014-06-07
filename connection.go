@@ -127,6 +127,7 @@ func (c *Connection) SendString(s string) {
 }
 
 func (c *Connection) Nick(s string) {
+	// TODO(scjudd): keep track of nick in Connection struct
 	c.SendString(fmt.Sprintf("NICK %s\r\n", s))
 }
 
