@@ -16,25 +16,25 @@ func (msg *Message) String() string {
 	return msg.Raw
 }
 
-func parseMessage(line string) *Message {
+func parseMessage(raw string) *Message {
 	msg := new(Message)
-	msg.Raw = line
+	msg.Raw = raw
 
 	// Remove "\r\n"
-	if strings.HasSuffix(line, "\r\n") {
-		line = line[:len(line)-2]
+	if strings.HasSuffix(raw, "\r\n") {
+		raw = raw[:len(raw)-2]
 	}
 
 	// Borrowed from http://git.io/zuwpfA
-	if line[0] == ':' {
-		if i := strings.Index(line, " "); i > -1 {
-			msg.Prefix = line[1:i]
-			line = line[i+1:]
+	if raw[0] == ':' {
+		if i := strings.Index(raw, " "); i > -1 {
+			msg.Prefix = raw[1:i]
+			raw = raw[i+1:]
 		} else {
-			log.Printf("Malformed message from server: %#s\n", line)
+			log.Printf("Malformed message from server: %#s\n", raw)
 		}
 	}
-	split := strings.SplitN(line, " :", 2)
+	split := strings.SplitN(raw, " :", 2)
 	args := strings.Split(split[0], " ")
 	msg.Command = strings.ToUpper(args[0])
 	msg.Params = args[1:]
