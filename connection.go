@@ -113,9 +113,8 @@ func (c *Connection) Connect(server, nick string) error {
 		}
 	}()
 
-
-	c.SendString("NICK " + nick + "\r\n")
-	c.SendString("USER bot * * :" + nick + "\r\n")
+	c.Nick(nick)
+	c.SendString(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
 
 	return <-errChan
 }
@@ -124,10 +123,14 @@ func (c *Connection) SendString(s string) {
 	c.write <- s
 }
 
-func (c *Connection) Join(ch string) {
-	c.SendString("JOIN " + ch + "\r\n")
+func (c *Connection) Nick(s string) {
+	c.SendString(fmt.Sprintf("NICK %s\r\n", s))
 }
 
-func (c *Connection) Privmsg(who, msg string) {
-	c.SendString("PRIVMSG " + who + " :" + msg + "\r\n")
+func (c *Connection) Join(s string) {
+	c.SendString(fmt.Sprintf("JOIN %s\r\n", s))
+}
+
+func (c *Connection) Privmsg(target, s string) {
+	c.SendString(fmt.Sprintf("PRIVMSG %s :%s\r\n", target, s))
 }
