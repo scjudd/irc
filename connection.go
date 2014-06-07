@@ -91,7 +91,7 @@ func (c *Connection) Connect(server, nick string) error {
 		}
 	}()
 
-	// dispatcher
+	// dispatch goroutine
 	go func() {
 		// TODO(scjudd): periodically send PINGs
 		for {
