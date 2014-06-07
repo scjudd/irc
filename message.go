@@ -8,6 +8,9 @@ import (
 type Message struct {
 	Raw     string
 	Prefix  string
+	Nick    string
+	User    string
+	Host    string
 	Command string
 	Params  []string
 }
@@ -32,6 +35,11 @@ func parseMessage(raw string) *Message {
 			raw = raw[i+1:]
 		} else {
 			log.Printf("Malformed message from server: %#s\n", raw)
+		}
+		if i, j := strings.Index(msg.Prefix, "!"), strings.Index(msg.Prefix, "@"); i > -1 && j > -1 {
+			msg.Nick = msg.Prefix[0:i]
+			msg.User = msg.Prefix[i+1 : j]
+			msg.Host = msg.Prefix[j+1 : len(msg.Prefix)]
 		}
 	}
 	split := strings.SplitN(raw, " :", 2)

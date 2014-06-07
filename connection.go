@@ -109,11 +109,9 @@ func (c *Connection) Connect(server, nick string) error {
 				return
 			default:
 				msg := parseMessage(<-c.read)
-				// TODO(scjudd): proper prefix parsing, so someone with nick botbot won't get ignored
-				if strings.Index(msg.Prefix, nick) == 0 {
-					continue // ignore our own messages
+				if msg.Nick != nick { // ignore our own messages
+					c.Dispatch(msg)
 				}
-				c.Dispatch(msg)
 			}
 		}
 	}()
