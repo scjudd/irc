@@ -33,7 +33,7 @@ func (c *Connection) Connect(server, nick string) error {
 	}
 
 	c.RegisterHandler("PING", func(msg *Message) {
-		c.WriteString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
+		c.SendRaw([]byte("PONG " + strings.Join(msg.Params, " ") + "\r\n"))
 	})
 
 	sock, err := net.Dial("tcp", server)
@@ -114,18 +114,12 @@ func (c *Connection) Connect(server, nick string) error {
 
 	c.sock = sock
 
-	c.WriteString("NICK " + nick + "\r\n")
-	c.WriteString("USER bot * * :" + nick + "\r\n")
+	c.SendRaw([]byte("NICK " + nick + "\r\n"))
+	c.SendRaw([]byte("USER bot * * :" + nick + "\r\n"))
 
 	return <-errChan
 }
 
-func (c *Connection) Write(b []byte) (int, error) {
-	// TODO(scjudd): implement proper Write interface
+func (c *Connection) SendRaw(b []byte) {
 	c.write <- b
-	return len(b), nil
-}
-
-func (c *Connection) WriteString(s string) (int, error) {
-	return c.Write([]byte(s))
 }
