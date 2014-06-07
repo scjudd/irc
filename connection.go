@@ -62,7 +62,6 @@ func (c *Connection) Connect(server, nick string) error {
 					fatal(fmt.Sprintf("read: %s", err))
 					return
 				}
-				str = str[:len(str)-2] // remove trailing "\r\n"
 				c.read <- parseMessage(str)
 			}
 		}
@@ -87,7 +86,7 @@ func (c *Connection) Connect(server, nick string) error {
 					return
 				}
 				bw.Flush()
-				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", msg)
+				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", msg.Raw[:len(msg.Raw)-2]) // remove "\r\n"
 			}
 		}
 	}()
