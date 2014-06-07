@@ -11,13 +11,13 @@ import (
 
 type Connection struct {
 	sock        net.Conn
-	read, write chan []byte
+	read, write chan string
 	MessageDispatcher
 }
 
 func NewConnection() *Connection {
-	read := make(chan []byte)
-	write := make(chan []byte)
+	read := make(chan string)
+	write := make(chan string)
 	dispatcher := NewDispatcher()
 	return &Connection{nil, read, write, dispatcher}
 }
@@ -33,7 +33,7 @@ func (c *Connection) Connect(server, nick string) error {
 	}
 
 	c.RegisterHandler("PING", func(msg *Message) {
-		c.SendRaw([]byte("PONG " + strings.Join(msg.Params, " ") + "\r\n"))
+		c.SendString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
 	})
 
 	sock, err := net.Dial("tcp", server)
@@ -57,7 +57,7 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				buff, err := br.ReadBytes('\n')
+				buff, err := br.ReadString('\n')
 				if err != nil {
 					// TODO(scjudd): if err is EOF, try reconnecting
 					fatal(fmt.Sprintf("read: %s", err))
@@ -82,7 +82,7 @@ func (c *Connection) Connect(server, nick string) error {
 					fatal("write: channel closed")
 					return
 				}
-				_, err := bw.Write(buff)
+				_, err := bw.WriteString(buff)
 				if err != nil {
 					fatal(fmt.Sprintf("write: %s", err))
 					return
@@ -102,7 +102,7 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				msg := parseMessage(string(<-c.read))
+				msg := parseMessage(<-c.read)
 				// TODO(scjudd): proper prefix parsing, so someone with nick botbot won't get ignored
 				if strings.Index(msg.Prefix, nick) == 0 {
 					continue // ignore our own messages
@@ -114,12 +114,12 @@ func (c *Connection) Connect(server, nick string) error {
 
 	c.sock = sock
 
-	c.SendRaw([]byte("NICK " + nick + "\r\n"))
-	c.SendRaw([]byte("USER bot * * :" + nick + "\r\n"))
+	c.SendString("NICK " + nick + "\r\n")
+	c.SendString("USER bot * * :" + nick + "\r\n")
 
 	return <-errChan
 }
 
-func (c *Connection) SendRaw(b []byte) {
-	c.write <- b
+func (c *Connection) SendString(s string) {
+	c.write <- s
 }
