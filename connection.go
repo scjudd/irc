@@ -11,7 +11,6 @@ import (
 
 type Connection struct {
 	sock        net.Conn
-	nick        string
 	read, write chan *Message
 	MessageDispatcher
 }
@@ -20,7 +19,7 @@ func NewConnection() *Connection {
 	read := make(chan *Message)
 	write := make(chan *Message)
 	dispatcher := NewDispatcher()
-	return &Connection{nil, "", read, write, dispatcher}
+	return &Connection{nil, read, write, dispatcher}
 }
 
 // c.Connect("irc.hashbang.sh:6667", "bot")
