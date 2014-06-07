@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+const (
+	MaxMessageLen = 512
+	MaxNickLen    = 9 // TODO(scjudd): not enforced yet
+)
+
 type Connection struct {
 	sock        net.Conn
 	read, write chan string
@@ -49,10 +54,10 @@ func (c *Connection) Connect(server, nick string) error {
 		close(shutdownChan)
 	}
 
-	// Read goroutine: Read at most MaxMsgLen bytes off the underlying socket
+	// Read goroutine: Read at most MaxMessageLen bytes off the underlying socket
 	// and push complete messages into the Connection.read channel
 	go func() {
-		br := bufio.NewReaderSize(sock, MaxMsgLen)
+		br := bufio.NewReaderSize(sock, MaxMessageLen)
 		for {
 			select {
 			case <-shutdownChan:
@@ -72,7 +77,7 @@ func (c *Connection) Connect(server, nick string) error {
 	// Write goroutine: Pull complete messages off the Connection.write channel
 	// and write them to the underlying socket
 	go func() {
-		bw := bufio.NewWriterSize(sock, MaxMsgLen)
+		bw := bufio.NewWriterSize(sock, MaxMessageLen)
 		for {
 			select {
 			case <-shutdownChan:
