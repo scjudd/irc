@@ -11,13 +11,13 @@ import (
 
 type Connection struct {
 	sock        net.Conn
-	read, write chan *Message
+	read, write chan []byte
 	MessageDispatcher
 }
 
 func NewConnection() *Connection {
-	read := make(chan *Message)
-	write := make(chan *Message)
+	read := make(chan []byte)
+	write := make(chan []byte)
 	dispatcher := NewDispatcher()
 	return &Connection{nil, read, write, dispatcher}
 }
@@ -33,7 +33,7 @@ func (c *Connection) Connect(server, nick string) error {
 	}
 
 	c.RegisterHandler("PING", func(msg *Message) {
-		c.WriteString("PONG " + strings.Join(msg.Params, " "))
+		c.WriteString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
 	})
 
 	sock, err := net.Dial("tcp", server)
@@ -48,7 +48,8 @@ func (c *Connection) Connect(server, nick string) error {
 		close(shutdownChan)
 	}
 
-	// read goroutine
+	// Read goroutine: Read at most MaxMsgLen bytes off the underlying socket
+	// and push complete messages into the Connection.read channel
 	go func() {
 		br := bufio.NewReaderSize(sock, MaxMsgLen)
 		for {
@@ -56,18 +57,19 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				str, err := br.ReadString('\n')
+				buff, err := br.ReadBytes('\n')
 				if err != nil {
 					// TODO(scjudd): if err is EOF, try reconnecting
 					fatal(fmt.Sprintf("read: %s", err))
 					return
 				}
-				c.read <- parseMessage(str)
+				c.read <- buff
 			}
 		}
 	}()
 
-	// write goroutine
+	// Write goroutine: Pull complete messages off the Connection.write channel
+	// and write them to the underlying socket
 	go func() {
 		bw := bufio.NewWriterSize(sock, MaxMsgLen)
 		for {
@@ -75,23 +77,24 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				msg, ok := <-c.write
+				buff, ok := <-c.write
 				if !ok {
 					fatal("write: channel closed")
 					return
 				}
-				_, err := bw.WriteString(msg.Raw + "\r\n")
+				_, err := bw.Write(buff)
 				if err != nil {
 					fatal(fmt.Sprintf("write: %s", err))
 					return
 				}
 				bw.Flush()
-				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", msg.Raw[:len(msg.Raw)-2]) // remove "\r\n"
+				log.Printf("\x1b[92;40;1m--> %s\x1b[0m\n", buff[:len(buff)-2]) // remove "\r\n"
 			}
 		}
 	}()
 
-	// dispatch goroutine
+	// Dispatch goroutine: Pull message bytes off the Connection.read channel,
+	// create Message structs, and dispatch Messages to registered handlers
 	go func() {
 		// TODO(scjudd): periodically send PINGs
 		for {
@@ -99,7 +102,7 @@ func (c *Connection) Connect(server, nick string) error {
 			case <-shutdownChan:
 				return
 			default:
-				msg := <-c.read
+				msg := parseMessage(string(<-c.read))
 				// TODO(scjudd): proper prefix parsing, so someone with nick botbot won't get ignored
 				if strings.Index(msg.Prefix, nick) == 0 {
 					continue // ignore our own messages
@@ -111,14 +114,18 @@ func (c *Connection) Connect(server, nick string) error {
 
 	c.sock = sock
 
-	c.WriteString("NICK " + nick)
-	c.WriteString("USER bot * * :" + nick)
+	c.WriteString("NICK " + nick + "\r\n")
+	c.WriteString("USER bot * * :" + nick + "\r\n")
 
 	return <-errChan
 }
 
+func (c *Connection) Write(b []byte) (int, error) {
+	// TODO(scjudd): implement proper Write interface
+	c.write <- b
+	return len(b), nil
+}
+
 func (c *Connection) WriteString(s string) (int, error) {
-	// TODO(scjudd): implement proper WriteString interface
-	c.write <- parseMessage(s)
-	return len(s), nil
+	return c.Write([]byte(s))
 }

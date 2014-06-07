@@ -20,7 +20,12 @@ func parseMessage(line string) *Message {
 	msg := new(Message)
 	msg.Raw = line
 
-	// borrowed parsing code from http://git.io/zuwpfA
+	// Remove "\r\n"
+	if strings.HasSuffix(line, "\r\n") {
+		line = line[:len(line)-2]
+	}
+
+	// Borrowed from http://git.io/zuwpfA
 	if line[0] == ':' {
 		if i := strings.Index(line, " "); i > -1 {
 			msg.Prefix = line[1:i]
