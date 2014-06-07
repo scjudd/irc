@@ -40,6 +40,7 @@ func (c *Connection) Connect(server, nick string) error {
 	if err != nil {
 		return err
 	}
+	c.sock = sock
 
 	errChan := make(chan error)
 	shutdownChan := make(chan struct{})
@@ -112,7 +113,6 @@ func (c *Connection) Connect(server, nick string) error {
 		}
 	}()
 
-	c.sock = sock
 
 	c.SendString("NICK " + nick + "\r\n")
 	c.SendString("USER bot * * :" + nick + "\r\n")
