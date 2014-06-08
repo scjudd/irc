@@ -116,17 +116,7 @@ func (c *Connection) Connect(server, nick string) error {
 		}
 	}()
 
-	// Send PING PONGs
-	c.RegisterHandler("PING", func(msg *Message) {
-		c.SendRawMessage("PONG " + strings.Join(msg.Params, " ") + "\r\n")
-	})
-
-	// Keep track of our own Nick
-	c.RegisterHandler("NICK", func(msg *Message) {
-		if msg.Nick == c.nick {
-			c.nick = msg.Params[0]
-		}
-	})
+	c.registerHandlers()
 
 	// Connection initialization: send NICK and USER messages
 	if err := c.Nick(nick); err != nil {
@@ -135,6 +125,21 @@ func (c *Connection) Connect(server, nick string) error {
 	c.SendRawMessage(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
 
 	return <-errChan
+}
+
+func (c *Connection) registerHandlers() {
+	// Send PING PONGs
+	c.RegisterHandler("PING", func(msg *Message) {
+		c.SendRawMessage("PONG " + strings.Join(msg.Params, " ") + "\r\n")
+	})
+
+	// Nick state tracking
+	c.RegisterHandler("NICK", func(msg *Message) {
+		if msg.Nick == c.nick {
+			c.nick = msg.Params[0]
+		}
+	})
+
 }
 
 func (c *Connection) SendRawMessage(s string) {
