@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 )
 
 func main() {
@@ -17,9 +18,14 @@ func main() {
 		c.Join(msg.Params[1])
 	})
 
-	// Echo back every message
 	c.RegisterHandler("PRIVMSG", func(msg *Message) {
-		c.Privmsg(msg.Params[0], msg.Params[1])
+		if strings.HasPrefix(msg.Params[1], "!") {
+			// Send raw command to server
+			c.SendString(msg.Params[1][1:] + "\r\n")
+		} else {
+			// Echo back every message
+			c.Privmsg(msg.Params[0], msg.Params[1])
+		}
 	})
 
 	if err := c.Connect("localhost:6667", "bot"); err != nil {
