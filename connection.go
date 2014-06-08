@@ -169,10 +169,12 @@ func (c *Connection) Nick(s string) error {
 	return nil
 }
 
-func (c *Connection) Join(s string) {
+func (c *Connection) Join(s string) error {
 	c.SendRawMessage(fmt.Sprintf("JOIN %s\r\n", s))
+	return nil
 }
 
-func (c *Connection) Privmsg(target, s string) {
+func (c *Connection) Privmsg(target, s string) error {
 	c.SendRawMessage(fmt.Sprintf("PRIVMSG %s :%s\r\n", target, s))
+	return nil
 }
