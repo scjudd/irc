@@ -29,7 +29,6 @@ func NewConnection() *Connection {
 	return &Connection{"", nil, nil, read, write, dispatcher}
 }
 
-// c.Connect("irc.hashbang.sh:6667", "bot")
 func (c *Connection) Connect(server, nick string) error {
 	if len(nick) > MaxNickLen {
 		return fmt.Errorf("Nick \"%s\" is too long", nick)
