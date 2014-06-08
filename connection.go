@@ -16,6 +16,7 @@ const (
 
 type Connection struct {
 	nick        string
+	channels    []string
 	sock        net.Conn
 	read, write chan string
 	MessageDispatcher
@@ -25,7 +26,7 @@ func NewConnection() *Connection {
 	read := make(chan string)
 	write := make(chan string)
 	dispatcher := NewDispatcher()
-	return &Connection{"", nil, read, write, dispatcher}
+	return &Connection{"", nil, nil, read, write, dispatcher}
 }
 
 // c.Connect("irc.hashbang.sh:6667", "bot")
@@ -140,6 +141,21 @@ func (c *Connection) registerHandlers() {
 		}
 	})
 
+	// Channel state tracking
+	c.RegisterHandler("JOIN", func(msg *Message) {
+		if msg.Nick == c.nick {
+			c.channels = append(c.channels, msg.Params[0])
+		}
+	})
+	c.RegisterHandler("PART", func(msg *Message) {
+		if msg.Nick == c.nick {
+			for i, ch := range c.channels {
+				if ch == msg.Params[0] {
+					c.channels = append(c.channels[:i], c.channels[i+1:]...)
+				}
+			}
+		}
+	})
 }
 
 func (c *Connection) SendRawMessage(s string) {
