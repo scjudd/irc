@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	irc.EnableLogging()
 	c := irc.NewConnection()
 
 	// Join #bot once handshake completes
