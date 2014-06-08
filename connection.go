@@ -129,31 +129,38 @@ func (c *Connection) Connect(server, nick string) error {
 
 func (c *Connection) registerHandlers() {
 	// Send PING PONGs
-	c.RegisterHandler("PING", func(msg *Message) {
+	c.RegisterHandler("PING", func(msg *Message) bool {
 		c.SendRawMessage("PONG " + strings.Join(msg.Params, " ") + "\r\n")
+		return true
 	})
 
 	// Nick state tracking
-	c.RegisterHandler("NICK", func(msg *Message) {
+	c.RegisterHandler("NICK", func(msg *Message) bool {
 		if msg.Nick == c.nick {
 			c.nick = msg.Params[0]
+			return true
 		}
+		return false
 	})
 
 	// Channel state tracking
-	c.RegisterHandler("JOIN", func(msg *Message) {
+	c.RegisterHandler("JOIN", func(msg *Message) bool {
 		if msg.Nick == c.nick {
 			c.channels = append(c.channels, msg.Params[0])
+			return true
 		}
+		return false
 	})
-	c.RegisterHandler("PART", func(msg *Message) {
+	c.RegisterHandler("PART", func(msg *Message) bool {
 		if msg.Nick == c.nick {
 			for i, ch := range c.channels {
 				if ch == msg.Params[0] {
 					c.channels = append(c.channels[:i], c.channels[i+1:]...)
 				}
 			}
+			return true
 		}
+		return false
 	})
 }
 
