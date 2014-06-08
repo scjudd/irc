@@ -37,10 +37,6 @@ func (c *Connection) Connect(server, nick string) error {
 		return errors.New("Connection's MessageDispatcher must be instantiated")
 	}
 
-	c.RegisterHandler("PING", func(msg *Message) {
-		c.SendString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
-	})
-
 	sock, err := net.Dial("tcp", server)
 	if err != nil {
 		return err
@@ -115,6 +111,11 @@ func (c *Connection) Connect(server, nick string) error {
 			}
 		}
 	}()
+
+	// Send PING PONGs
+	c.RegisterHandler("PING", func(msg *Message) {
+		c.SendString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
+	})
 
 	c.Nick(nick)
 	c.SendString(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
