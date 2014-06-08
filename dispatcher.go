@@ -21,8 +21,8 @@ func (sd SimpleDispatcher) RegisterHandler(cmd string, handler func(*Message)) {
 
 func (sd SimpleDispatcher) Dispatch(msg *Message) {
 	if len(sd[msg.Command]) > 0 {
+        log.Printf("\x1b[96;40;1m<-- %s\x1b[0m\n", msg.Raw[:len(msg.Raw)-2])
 		for _, handler := range sd[msg.Command] {
-			log.Printf("\x1b[96;40;1m<-- %s\x1b[0m\n", msg.Raw[:len(msg.Raw)-2])
 			handler(msg)
 		}
 	} else {
