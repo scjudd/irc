@@ -105,9 +105,7 @@ func (c *Connection) Connect(server, nick string) error {
 				return
 			default:
 				msg := parseMessage(<-c.read)
-				if msg.Nick != nick { // ignore our own messages
-					c.Dispatch(msg)
-				}
+				c.Dispatch(msg)
 			}
 		}
 	}()
