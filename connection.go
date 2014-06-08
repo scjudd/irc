@@ -118,7 +118,7 @@ func (c *Connection) Connect(server, nick string) error {
 
 	// Send PING PONGs
 	c.RegisterHandler("PING", func(msg *Message) {
-		c.SendString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
+		c.SendRawMessage("PONG " + strings.Join(msg.Params, " ") + "\r\n")
 	})
 
 	// Keep track of our own Nick
@@ -132,12 +132,12 @@ func (c *Connection) Connect(server, nick string) error {
 	if err := c.Nick(nick); err != nil {
 		errChan <- err
 	}
-	c.SendString(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
+	c.SendRawMessage(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
 
 	return <-errChan
 }
 
-func (c *Connection) SendString(s string) {
+func (c *Connection) SendRawMessage(s string) {
 	c.write <- s
 }
 
@@ -145,14 +145,14 @@ func (c *Connection) Nick(s string) error {
 	if len(s) > MaxNickLen {
 		return fmt.Errorf("Nick \"%s\" is too long", s)
 	}
-	c.SendString(fmt.Sprintf("NICK %s\r\n", s))
+	c.SendRawMessage(fmt.Sprintf("NICK %s\r\n", s))
 	return nil
 }
 
 func (c *Connection) Join(s string) {
-	c.SendString(fmt.Sprintf("JOIN %s\r\n", s))
+	c.SendRawMessage(fmt.Sprintf("JOIN %s\r\n", s))
 }
 
 func (c *Connection) Privmsg(target, s string) {
-	c.SendString(fmt.Sprintf("PRIVMSG %s :%s\r\n", target, s))
+	c.SendRawMessage(fmt.Sprintf("PRIVMSG %s :%s\r\n", target, s))
 }

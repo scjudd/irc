@@ -21,7 +21,7 @@ func main() {
 	c.RegisterHandler("PRIVMSG", func(msg *Message) {
 		if strings.HasPrefix(msg.Params[1], "!") {
 			// Send raw command to server
-			c.SendString(msg.Params[1][1:] + "\r\n")
+			c.SendRawMessage(msg.Params[1][1:] + "\r\n")
 		} else {
 			// Echo back every message
 			c.Privmsg(msg.Params[0], msg.Params[1])
