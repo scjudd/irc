@@ -11,10 +11,11 @@ import (
 
 const (
 	MaxMessageLen = 512
-	MaxNickLen    = 9 // TODO(scjudd): not enforced yet
+	MaxNickLen    = 9
 )
 
 type Connection struct {
+	nick        string
 	sock        net.Conn
 	read, write chan string
 	MessageDispatcher
@@ -24,11 +25,16 @@ func NewConnection() *Connection {
 	read := make(chan string)
 	write := make(chan string)
 	dispatcher := NewDispatcher()
-	return &Connection{nil, read, write, dispatcher}
+	return &Connection{"", nil, read, write, dispatcher}
 }
 
 // c.Connect("irc.hashbang.sh:6667", "bot")
 func (c *Connection) Connect(server, nick string) error {
+	if len(nick) > MaxNickLen {
+		return fmt.Errorf("Nick \"%s\" is too long", nick)
+	}
+	c.nick = nick
+
 	if c.sock != nil {
 		return errors.New("Connection already established")
 	}
@@ -115,7 +121,17 @@ func (c *Connection) Connect(server, nick string) error {
 		c.SendString("PONG " + strings.Join(msg.Params, " ") + "\r\n")
 	})
 
-	c.Nick(nick)
+	// Keep track of our own Nick
+	c.RegisterHandler("NICK", func(msg *Message) {
+		if msg.Nick == c.nick {
+			c.nick = msg.Params[0]
+		}
+	})
+
+	// Connection initialization: send NICK and USER messages
+	if err := c.Nick(nick); err != nil {
+		errChan <- err
+	}
 	c.SendString(fmt.Sprintf("USER %s * * :%s\r\n", nick, nick))
 
 	return <-errChan
@@ -125,9 +141,12 @@ func (c *Connection) SendString(s string) {
 	c.write <- s
 }
 
-func (c *Connection) Nick(s string) {
-	// TODO(scjudd): keep track of nick in Connection struct
+func (c *Connection) Nick(s string) error {
+	if len(s) > MaxNickLen {
+		return fmt.Errorf("Nick \"%s\" is too long", s)
+	}
 	c.SendString(fmt.Sprintf("NICK %s\r\n", s))
+	return nil
 }
 
 func (c *Connection) Join(s string) {
